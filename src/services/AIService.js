@@ -31,10 +31,15 @@ export class AIService {
         'Content-Type': 'application/json',
       };
 
-      // Web端通过代理，移动端直接调用
+      // Web 端通过代理（Key 优先客户端，否则由 proxy-server .env 兜底）
       if (Platform.OS === 'web') {
-        body.apiKey = config.API_KEY;
+        if (config.API_KEY) {
+          body.apiKey = config.API_KEY;
+        }
       } else {
+        if (!config.API_KEY) {
+          throw new Error('未配置 AI API Key，请在 .env 中设置 EXPO_PUBLIC_SILICONFLOW_API_KEY');
+        }
         headers['Authorization'] = `Bearer ${config.API_KEY}`;
       }
 
@@ -44,17 +49,37 @@ export class AIService {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error.message || 'AI调用失败');
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(`AI调用失败 (HTTP ${response.status})`);
       }
 
-      if (data.choices && data.choices[0]) {
-        return data.choices[0].message.content;
+      // 上游有时返回纯字符串，如 401: "Api key is invalid"
+      if (typeof data === 'string') {
+        throw new Error(data.trim() || 'AI调用失败');
       }
 
-      throw new Error('AI返回格式异常');
+      const extractErrorMessage = () => {
+        if (typeof data?.error === 'string') return data.error;
+        if (data?.error?.message) return data.error.message;
+        if (data?.message) return data.message;
+        if (!response.ok) return `AI调用失败 (HTTP ${response.status})`;
+        return null;
+      };
+
+      const errMsg = extractErrorMessage();
+      if (errMsg) {
+        throw new Error(errMsg);
+      }
+
+      const content = data?.choices?.[0]?.message?.content;
+      if (content != null && String(content).trim() !== '') {
+        return content;
+      }
+
+      throw new Error('AI返回格式异常，请检查 API Key 与模型配置');
     } catch (error) {
       console.error('硅基流动调用失败:', error);
       throw error;
@@ -68,7 +93,7 @@ export class AIService {
     const enabledServices = getEnabledAIServices();
     
     if (enabledServices.length === 0) {
-      throw new Error('未配置AI服务，请在config/ai.js中配置API密钥');
+      throw new Error('未配置AI服务，请在 .env 中设置 EXPO_PUBLIC_SILICONFLOW_API_KEY');
     }
 
     // 调用硅基流动

@@ -24,6 +24,12 @@
  *   SILICONFLOW_API_KEY=... (for AI API)
  */
 
+try {
+  require('dotenv').config();
+} catch {
+  // dotenv optional
+}
+
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
@@ -35,6 +41,8 @@ const ENV_JUHE_API_KEY = process.env.JUHE_API_KEY;
 const ENV_TIANAPI_KEY = process.env.TIANAPI_KEY;
 const ENV_JISU_API_KEY = process.env.JISU_API_KEY;
 const ENV_WANWEI_APP_CODE = process.env.WANWEI_APP_CODE;
+const ENV_SILICONFLOW_API_KEY =
+  process.env.SILICONFLOW_API_KEY || process.env.EXPO_PUBLIC_SILICONFLOW_API_KEY;
 
 function sendJson(res, statusCode, obj) {
   const body = JSON.stringify(obj);
@@ -283,7 +291,6 @@ const server = http.createServer(async (req, res) => {
     }
 
     // AI API endpoints - 硅基流动 SiliconFlow
-    const ENV_SILICONFLOW_API_KEY = process.env.SILICONFLOW_API_KEY;
     if (req.method === 'POST' && url.pathname === '/api/ai/siliconflow') {
       const body = await readJsonBody(req);
       const apiKey = body.apiKey || ENV_SILICONFLOW_API_KEY;
@@ -304,7 +311,12 @@ const server = http.createServer(async (req, res) => {
       try {
         json = JSON.parse(r.body || '{}');
       } catch {
-        json = { raw: r.body };
+        json = { error: r.body || 'Upstream error' };
+      }
+      if (typeof json === 'string') {
+        json = { error: json };
+      } else if ((r.statusCode || 0) >= 400 && !json.error) {
+        json = { error: json.message || json.raw || 'Upstream error' };
       }
       return sendJson(res, r.statusCode || 200, json);
     }

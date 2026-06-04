@@ -52,8 +52,7 @@
       ]
     ],
     "extra": {
-      "CLOUD_API_BASE_URL": "http://67.209.179.168:4000",
-      "SILICONFLOW_API_KEY": "sk-jtjedvpztnimokwxkfqjxvbukylwiaqmnrgeajzuzlxgutcm"
+      "CLOUD_API_BASE_URL": "http://67.209.179.168:4000"
     }
   }
 }
