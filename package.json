@@ -8,7 +8,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "proxy": "node proxy-server.js",
-    "cloud": "node cloud-server.js"
+    "cloud": "node cloud-server.js",
+    "dev:all": "node scripts/start-all.js",
+    "stop:all": "node scripts/stop-all.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.0.1",

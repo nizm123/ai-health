@@ -23,6 +23,7 @@ dist/
 # Environment
 .env
 .env.local
+.run/
 
 *.md
 !README.md
